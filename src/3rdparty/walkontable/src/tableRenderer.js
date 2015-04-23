@@ -185,7 +185,9 @@ WalkontableTableRenderer.prototype.adjustColumnHeaderHeights = function () {
       if(this.instance.wtTable.THEAD.childNodes[i].childNodes.length === 0) {
         return;
       }
-      this.instance.wtTable.THEAD.childNodes[i].childNodes[0].style.height = this.instance.wtViewport.oversizedColumnHeaders[i] + "px";
+      var currentHeader = this.instance.cloneSource.wtTable.getColumnHeader(0, 0);
+      var currentHeaderHeight = Handsontable.Dom.innerHeight(currentHeader);
+      this.instance.wtTable.THEAD.childNodes[i].childNodes[0].style.height = currentHeaderHeight + "px";
     }
   }
 };
