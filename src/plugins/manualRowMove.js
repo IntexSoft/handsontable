@@ -180,11 +180,6 @@
         }
       });
 
-      instance.addHook('afterDestroy', unbindEvents);
-    };
-
-    var unbindEvents = function () {
-      eventManager.clear();
     };
 
     var createPositionData = function (positionArr, len) {
