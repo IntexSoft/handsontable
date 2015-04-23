@@ -1337,22 +1337,14 @@ Handsontable.Core = function (rootElement, userSettings) {
       }
     }
 
-    // Load data or create data map
-    if (settings.data === void 0 && priv.settings.data === void 0) {
-      instance.loadData(null); //data source created just now
-    }
-    else if (settings.data !== void 0) {
-      instance.loadData(settings.data); //data source given as option
-    }
-    else if (settings.columns !== void 0) {
-      datamap.createMap();
-    }
 
     // Init columns constructors configuration
     clen = instance.countCols();
 
     //Clear cellSettings cache
     priv.cellSettings.length = 0;
+    //Clear columnSettings to actual length
+    priv.columnSettings.length = 0;
 
     if (clen > 0) {
       var proto, column;
@@ -1370,6 +1362,18 @@ Handsontable.Core = function (rootElement, userSettings) {
           Handsontable.helper.extend(proto, expandType(column));
         }
       }
+    }
+
+
+    // Load data or create data map
+    if (settings.data === void 0 && priv.settings.data === void 0) {
+      instance.loadData(null); //data source created just now
+    }
+    else if (settings.data !== void 0) {
+      instance.loadData(settings.data); //data source given as option
+    }
+    else if (settings.columns !== void 0) {
+      datamap.createMap();
     }
 
     if (typeof settings.cell !== 'undefined') {
@@ -1417,6 +1421,11 @@ Handsontable.Core = function (rootElement, userSettings) {
     if (height){
       instance.rootElement.style.overflow = 'hidden';
     }
+
+    if (typeof settings.mergeCells != 'undefined') {
+      instance.mergeCells = new MergeCells(settings.mergeCells);
+    }
+
     /* jshint ignore:end */
 
     if (!init) {
