@@ -121,12 +121,15 @@
 
     switch(editorSection) {
       case 'top':
+        this.select.style.zIndex = 101;
         cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtOverlays.topOverlay.clone.wtTable.holder.parentNode);
         break;
       case 'left':
+        this.select.style.zIndex = 103;
         cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtOverlays.leftOverlay.clone.wtTable.holder.parentNode);
         break;
       case 'corner':
+        this.select.style.zIndex = 102;
         cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtOverlays.topLeftCornerOverlay.clone.wtTable.holder.parentNode);
         break;
     }
