@@ -3400,6 +3400,9 @@ DefaultSettings.prototype = {
   checkedTemplate: void 0,
   uncheckedTemplate: void 0,
   format: void 0,
-  className: void 0
+  className: void 0,
+  onRowMove: function(){ return false;},
+  onOverRowMoveHandler: function(){return false;},
+  renderOnlyVisibleParts: false
 };
 Handsontable.DefaultSettings = DefaultSettings;

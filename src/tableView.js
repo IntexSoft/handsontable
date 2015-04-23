@@ -184,6 +184,15 @@ Handsontable.TableView = function (instance) {
       return that.settings.fixedRowsTop;
     },
     renderAllRows: that.settings.renderAllRows,
+    renderOnlyVisibleParts: function () {
+      return that.settings.renderOnlyVisibleParts;
+    },
+    onRowMove: function () {
+      return that.settings.onRowMove();
+    },
+    onOverRowMoveHandler: function () {
+      return that.settings.onOverRowMoveHandler();
+    },
     rowHeaders: function () {
       var arr = [];
       if(instance.hasRowHeaders()) {

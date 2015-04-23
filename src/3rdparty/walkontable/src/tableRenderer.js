@@ -246,8 +246,11 @@ WalkontableTableRenderer.prototype.renderCells = function (sourceRowIndex, TR, c
     }
 
     TD.removeAttribute('style');
-
-    this.instance.wtSettings.settings.cellRenderer(sourceRowIndex, sourceColIndex, TD);
+    var canRenderCell = this.instance.wtSettings.settings.renderOnlyVisibleParts() ? this.wtTable.isWorkingOnClone()
+    || this.instance.wtSettings.settings.fixedColumnsLeft() <= visibleColIndex : true;
+    if (canRenderCell) {
+      this.instance.wtSettings.settings.cellRenderer(sourceRowIndex, sourceColIndex, TD);
+    }
 
   }
 
