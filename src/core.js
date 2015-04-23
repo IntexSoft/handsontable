@@ -772,14 +772,15 @@ Handsontable.Core = function (rootElement, userSettings) {
 
   function ValidatorsQueue() { //moved this one level up so it can be used in any function here. Probably this should be moved to a separate file
     var resolved = false;
-
+    var valid = true;
     return {
       validatorsInQueue: 0,
       addValidatorToQueue: function () {
         this.validatorsInQueue++;
         resolved = false;
       },
-      removeValidatorFormQueue: function () {
+      removeValidatorFormQueue: function (result) {
+        valid = valid ? result : false;
         this.validatorsInQueue = this.validatorsInQueue - 1 < 0 ? 0 : this.validatorsInQueue - 1;
         this.checkIfQueueIsEmpty();
       },
@@ -789,7 +790,7 @@ Handsontable.Core = function (rootElement, userSettings) {
         /* jshint ignore:start */
         if (this.validatorsInQueue == 0 && resolved == false) {
           resolved = true;
-          this.onQueueEmpty();
+          this.onQueueEmpty(valid);
         }
         /* jshint ignore:end */
       }
