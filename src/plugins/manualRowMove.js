@@ -19,7 +19,7 @@
       currentTH,
       handle = document.createElement('DIV'),
       guide = document.createElement('DIV'),
-      eventManager = Handsontable.eventManager(this);
+      eventManager;
 
     handle.className = 'manualRowMover';
     guide.className = 'manualRowMoverGuide';
@@ -201,6 +201,7 @@
 
     this.init = function (source) {
       var instance = this;
+      eventManager = Handsontable.eventManager(instance);
       var manualRowMoveEnabled = !!(instance.getSettings().manualRowMove);
 
       if (manualRowMoveEnabled) {
