@@ -1,13 +1,3 @@
-/**
- * Checkbox renderer
- * @param {Object} instance Handsontable instance
- * @param {Element} TD Table cell where to render
- * @param {Number} row
- * @param {Number} col
- * @param {String|Number} prop Row object property name
- * @param value Value to render (remember to escape unsafe HTML before inserting to DOM!)
- * @param {Object} cellProperties Cell properites (shared by cell renderer and editor)
- */
 (function (Handsontable) {
 
   'use strict';
@@ -17,61 +7,56 @@
   clonableINPUT.type = 'checkbox';
   clonableINPUT.setAttribute('autocomplete', 'off');
 
-  var CheckboxRenderer = function (instance, TD, row, col, prop, value, cellProperties) {
-
-    var eventManager = Handsontable.eventManager(instance);
-
-    if (typeof cellProperties.checkedTemplate === "undefined") {
-      cellProperties.checkedTemplate = true;
+  function applyPropertiesToCheckboxCell(cell, checkbox, value, cellProperties) {
+    if (cellProperties.className) {
+      if (cell.className) {
+        cell.className = cell.className + " " + cellProperties.className;
+      } else {
+        cell.className = cellProperties.className;
+      }
     }
-    if (typeof cellProperties.uncheckedTemplate === "undefined") {
-      cellProperties.uncheckedTemplate = false;
-    }
-
-    Handsontable.Dom.empty(TD); //TODO identify under what circumstances this line can be removed
-
-    var INPUT = clonableINPUT.cloneNode(false); //this is faster than createElement
-
-    if (value === cellProperties.checkedTemplate || value === Handsontable.helper.stringify(cellProperties.checkedTemplate)) {
-      INPUT.checked = true;
-      TD.appendChild(INPUT);
-    }
-    else if (value === cellProperties.uncheckedTemplate || value === Handsontable.helper.stringify(cellProperties.uncheckedTemplate)) {
-      TD.appendChild(INPUT);
-    }
-    else if (value === null) { //default value
-      INPUT.className += ' noValue';
-      TD.appendChild(INPUT);
-    }
-    else {
-      Handsontable.Dom.fastInnerText(TD, '#bad value#'); //this is faster than innerHTML. See: https://github.com/handsontable/handsontable/wiki/JavaScript-&-DOM-performance-tips
-    }
-
     if (cellProperties.readOnly) {
-      eventManager.addEventListener(INPUT,'click',function (event) {
-        event.preventDefault();
-      });
+      Handsontable.Dom.addClass(cell, cellProperties.readOnlyCellClassName);
     }
-    else {
-      eventManager.addEventListener(INPUT,'mousedown',function (event) {
-        Handsontable.helper.stopPropagation(event);
-        //event.stopPropagation(); //otherwise can confuse cell mousedown handler
-      });
-
-      eventManager.addEventListener(INPUT,'mouseup',function (event) {
-        Handsontable.helper.stopPropagation(event);
-        //event.stopPropagation(); //otherwise can confuse cell dblclick handler
-      });
-
-      eventManager.addEventListener(INPUT,'change',function () {
-        if (this.checked) {
-          instance.setDataAtRowProp(row, prop, cellProperties.checkedTemplate);
-        }
-        else {
-          instance.setDataAtRowProp(row, prop, cellProperties.uncheckedTemplate);
-        }
-      });
+    checkbox.className = '';
+    if (value === cellProperties.checkedTemplate || Handsontable.helper.stringify(cellProperties.checkedTemplate) === value) {
+      checkbox.checked = true;
+    } else if (value === cellProperties.uncheckedTemplate || Handsontable.helper.stringify(cellProperties.uncheckedTemplate) === value ) {
+      checkbox.checked = false;
+    } else {
+      checkbox.className += ' noValue';
     }
+    checkbox.disabled = cellProperties.readOnly || false;
+  }
+
+  var CheckboxRenderer = function (instance, TD, row, col, prop, value, cellProperties) {
+    var checkbox = TD.querySelector('input[type=checkbox]');
+    cellProperties.checkedTemplate = true;
+    cellProperties.uncheckedTemplate = false;
+    if(checkbox) {
+      applyPropertiesToCheckboxCell(TD, checkbox, value, cellProperties);
+      return;
+    }
+    var eventManager = Handsontable.eventManager(TD);
+    eventManager.clear();
+    Handsontable.Dom.empty(TD); //TODO identify under what circumstances this line can be removed
+    var INPUT = clonableINPUT.cloneNode(false); //this is faster than createElement
+    TD.appendChild(INPUT);
+    applyPropertiesToCheckboxCell(TD, INPUT, value, cellProperties);
+    eventManager.addEventListener(INPUT,'mousedown',function (event) {
+      Handsontable.helper.stopPropagation(event);
+    });
+    eventManager.addEventListener(INPUT,'mouseup',function (event) {
+      Handsontable.helper.stopPropagation(event);
+    });
+    eventManager.addEventListener(INPUT,'change',function () {
+      var row = instance.getCoords(this.parentNode).row;
+      instance.setDataAtRowProp(row, prop, this.checked);
+    });
+    //We need to unbind the listener after the table has been destroyed
+    instance.addHookOnce('afterDestroy', function () {
+      eventManager.clear();
+    });
 
     if(!instance.CheckboxRenderer || !instance.CheckboxRenderer.beforeKeyDownHookBound){
       instance.CheckboxRenderer = {
@@ -92,7 +77,7 @@
 
           for(var row = topLeft.row; row <= bottomRight.row; row++ ){
             for(var col = topLeft.col; col <= bottomRight.col; col++){
-              cell = instance.getCell(row, col);
+              cell = instance.getCell(row, col, true);
               cellProperties = instance.getCellMeta(row, col);
 
               checkbox = cell.querySelectorAll('input[type=checkbox]');
