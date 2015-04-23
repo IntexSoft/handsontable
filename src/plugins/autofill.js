@@ -109,8 +109,10 @@
 
       if (_this.instance.mouseDragOutside) {
         setTimeout(function () {
-          _this.addingStarted = false;
-          _this.instance.alter('insert_row');
+          if(_this.instance.getSettings().minSpareRows > 0) {
+            _this.addingStarted = false;
+            _this.instance.alter('insert_row');
+          }
         }, 200);
       }
     }
@@ -305,18 +307,19 @@
       selection,
       tableRows = this.instance.countRows(),
       that = this;
+    if(this.instance.getSettings().minSpareRows > 0) {
+      if (this.instance.view.wt.selections.fill.cellRange && this.addingStarted === false) {
+        selection = this.instance.getSelected();
+        fillCorners = this.instance.view.wt.selections.fill.getCorners();
 
-    if (this.instance.view.wt.selections.fill.cellRange && this.addingStarted === false) {
-      selection = this.instance.getSelected();
-      fillCorners = this.instance.view.wt.selections.fill.getCorners();
+        if (selection[2] < tableRows - 1 && fillCorners[2] === tableRows - 1) {
+          this.addingStarted = true;
 
-      if (selection[2] < tableRows - 1 && fillCorners[2] === tableRows - 1) {
-        this.addingStarted = true;
-
-        this.instance._registerTimeout(setTimeout(function () {
-          that.instance.alter('insert_row');
-          that.addingStarted = false;
-        }, 200));
+          this.instance._registerTimeout(setTimeout(function () {
+            that.instance.alter('insert_row');
+            that.addingStarted = false;
+          }, 200));
+        }
       }
     }
   };
