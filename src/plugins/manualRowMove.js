@@ -44,21 +44,21 @@
       if (row >= 0) { //if not row header
         currentRow = row;
         var box = currentTH.getBoundingClientRect();
-        startOffset = box.top;
+        startOffset = currentTH.offsetTop;
         handle.style.top = startOffset + 'px';
-        handle.style.left = box.left + 'px';
-        instance.rootElement.appendChild(handle);
+        handle.style.left = currentTH.offsetLeft + 'px';
+        instance.view.wt.wtTable.spreader.appendChild(handle);
       }
     }
 
     function refreshHandlePosition(TH, delta) {
       var box = TH.getBoundingClientRect();
-      var handleHeight = 6;
+      var handleHeight = box.height;
       if (delta > 0) {
-        handle.style.top = (box.top + box.height - handleHeight) + 'px';
+        handle.style.top = (TH.offsetTop + box.height - handleHeight) + 'px';
       }
       else {
-        handle.style.top = box.top + 'px';
+        handle.style.top = TH.offsetTop + 'px';
       }
     }
 
@@ -67,15 +67,21 @@
       Handsontable.Dom.addClass(handle, 'active');
       Handsontable.Dom.addClass(guide, 'active');
       var box = currentTH.getBoundingClientRect();
-      guide.style.width = instance.view.maximumVisibleElementWidth(0) + 'px';
+      guide.style.width = instance.view.maximumVisibleElementWidth(0) - handle.offsetWidth  + 'px';
       guide.style.height = box.height + 'px';
       guide.style.top = startOffset + 'px';
-      guide.style.left = handle.style.left;
-      instance.rootElement.appendChild(guide);
+      guide.style.left = parseInt(handle.style.left) + handle.offsetWidth + 'px';
+      guide.style.zIndex = 105;
+      instance.view.wt.wtTable.spreader.appendChild(guide);
     }
 
     function refreshGuidePosition(diff) {
-      guide.style.top = startOffset + diff + 'px';
+      guide.style.top = handle.style.top;
+    }
+
+    function removeHandleAndGuide() {
+      handle.parentNode.removeChild(handle);
+      guide.parentNode.removeChild(guide);
     }
 
     function hideHandleAndGuide() {
@@ -109,17 +115,36 @@
     var bindEvents = function () {
       var instance = this;
       var pressed;
-
+      var allowDrop = true;
+      var allowMove = true;
 
       eventManager.addEventListener(instance.rootElement, 'mouseover', function (e) {
         if (checkRowHeader(e.target)) {
           var th = getTHFromTargetElement(e.target);
           if (th) {
+            endRow = instance.view.wt.wtTable.getCoords(th).row;
             if (pressed) {
-              endRow = instance.view.wt.wtTable.getCoords(th).row;
+              var notAllowedDrop = instance.getSettings().onRowMove(endRow, startRow);
+              if (notAllowedDrop) {
+                handle.style.cursor = 'no-drop';
+                allowDrop = false;
+              } else {
+                handle.style.cursor = 'auto';
+                allowDrop = true;
+              }
               refreshHandlePosition(th, endRow - startRow);
             }
             else {
+              if (!isNaN(endRow)) {
+                var notAllowedMove = instance.getSettings().onOverRowMoveHandler(endRow, startRow);
+                if (notAllowedMove) {
+                  handle.style.cursor = 'no-drop';
+                  allowMove = false;
+                } else {
+                  handle.style.cursor = 'move';
+                  allowMove = true;
+                }
+              }
               setupHandlePosition.call(instance, th);
             }
           }
@@ -127,11 +152,10 @@
       });
 
       eventManager.addEventListener(instance.rootElement, 'mousedown', function (e) {
-        if (Handsontable.Dom.hasClass(e.target, 'manualRowMover')) {
+        if (Handsontable.Dom.hasClass(e.target, 'manualRowMover') && allowMove) {
           startY = Handsontable.helper.pageY(e);
           setupGuidePosition.call(instance);
           pressed = instance;
-
           startRow = currentRow;
           endRow = currentRow;
         }
@@ -139,25 +163,19 @@
 
       eventManager.addEventListener(window, 'mousemove', function (e) {
         if (pressed) {
-          refreshGuidePosition(Handsontable.helper.pageY(e) - startY);
+          refreshGuidePosition();
         }
       });
 
       eventManager.addEventListener(window, 'mouseup', function (e) {
+        instance.rootElement.style.cursor = 'normal';
         if (pressed) {
           hideHandleAndGuide();
+          removeHandleAndGuide();
           pressed = false;
-
-          createPositionData(instance.manualRowPositions, instance.countRows());
-          instance.manualRowPositions.splice(endRow, 0, instance.manualRowPositions.splice(startRow, 1)[0]);
-
-          instance.forceFullRender = true;
-          instance.view.render(); //updates all
-
-          saveManualRowPositions.call(instance);
-
-          Handsontable.hooks.run(instance, 'afterRowMove', startRow, endRow);
-
+          if (allowDrop && startRow !== endRow) {
+            Handsontable.hooks.run(instance, 'afterRowMove', startRow, endRow);
+          }
           setupHandlePosition.call(instance, currentTH);
         }
       });
