@@ -62,7 +62,10 @@ function WalkontableSettings(instance, settings) {
     scrollbarHeight: 10,
 
     renderAllRows: false,
-    groups: false
+    groups: false,
+    renderOnlyVisibleParts: false,
+    onRowMove: function(){ return false;},
+    onOverRowMoveHandler: function(){return false;},
   };
 
   //reference to settings
