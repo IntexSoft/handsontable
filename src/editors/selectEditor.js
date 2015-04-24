@@ -111,12 +111,38 @@
     }
   };
 
-  SelectEditor.prototype.open = function () {
+  SelectEditor.prototype.getEditedCell = function (editorSection) {
+    var editedCell = this.instance.getCell(this.row, this.col, true);
+
+    switch (editorSection) {
+      case 'top':
+        this.select.style.zIndex = 101;
+        break;
+      case 'corner':
+        this.select.style.zIndex = 103;
+        break;
+      case 'left':
+        this.select.style.zIndex = 102;
+        break;
+      default :
+        this.select.style.zIndex = "";
+        break;
+    }
+
+    return editedCell != -1 && editedCell != -2 ? editedCell : void 0;
+  };
+
+  SelectEditor.prototype.refreshDimensions = function(){
+    var editorSection = this.checkEditorSection();
+    this.TD = this.getEditedCell(editorSection);
+    if (!this.TD) {
+      //TD is outside of the viewport. Otherwise throws exception when scrolling the table while a cell is edited
+      return;
+    }
     var width = Handsontable.Dom.outerWidth(this.TD); //important - group layout reads together for better performance
     var height = Handsontable.Dom.outerHeight(this.TD);
     var rootOffset = Handsontable.Dom.offset(this.instance.rootElement);
     var tdOffset = Handsontable.Dom.offset(this.TD);
-    var editorSection = this.checkEditorSection();
     var cssTransformOffset;
 
     switch(editorSection) {
@@ -136,7 +162,7 @@
 
     var selectStyle = this.select.style;
 
-    if(cssTransformOffset && cssTransformOffset != -1) {
+    if (cssTransformOffset && cssTransformOffset != -1) {
       selectStyle[cssTransformOffset[0]] = cssTransformOffset[1];
     } else {
       Handsontable.Dom.resetCssTransform(this.select);
@@ -144,18 +170,31 @@
 
     selectStyle.height = height + 'px';
     selectStyle.minWidth = width + 'px';
-    selectStyle.top = tdOffset.top - rootOffset.top + 'px';
+    selectStyle.top = tdOffset.top - rootOffset.top - this.instance.view.wt.wtOverlays.mainTableScrollableElement.scrollTop + 'px';
     selectStyle.left = tdOffset.left - rootOffset.left + 'px';
     selectStyle.margin = '0px';
     selectStyle.display = '';
+  };
 
+  SelectEditor.prototype.open = function () {
+    var editor = this;
+    this.refreshDimensions();
     this.instance.addHook('beforeKeyDown', onBeforeKeyDown);
+    this.instance.addHook('afterScrollVertically', afterScrollHandler);
+    this.instance.addHook('afterScrollHorizontally', afterScrollHandler);
   };
 
   SelectEditor.prototype.close = function () {
     this.select.style.display = 'none';
     this.instance.removeHook('beforeKeyDown', onBeforeKeyDown);
+    this.instance.removeHook('afterScrollVertically', afterScrollHandler);
+    this.instance.removeHook('afterScrollHorizontally', afterScrollHandler);
   };
+
+  function afterScrollHandler() {
+    var editor = this.getActiveEditor();
+    editor.finishEditing();
+  }
 
   SelectEditor.prototype.focus = function () {
     this.select.focus();
