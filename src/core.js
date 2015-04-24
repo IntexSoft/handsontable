@@ -1338,6 +1338,26 @@ Handsontable.Core = function (rootElement, userSettings) {
       }
     }
 
+    if (typeof settings.height != 'undefined'){
+      var height = settings.height;
+
+      if (typeof height == 'function'){
+        height = height();
+      }
+
+      instance.rootElement.style.height = height + 'px';
+    }
+
+    if (typeof settings.width != 'undefined'){
+      var width = settings.width;
+
+      if (typeof width == 'function'){
+        width = width();
+      }
+
+      instance.rootElement.style.width = width + 'px';
+    }
+
 
     // Init columns constructors configuration
     clen = instance.countCols();
@@ -1396,26 +1416,6 @@ Handsontable.Core = function (rootElement, userSettings) {
         Handsontable.Dom.addClass(instance.rootElement,settings.className);
 //        instance.rootElement.addClass(settings.className);
       }
-    }
-
-    if (typeof settings.height != 'undefined'){
-      var height = settings.height;
-
-      if (typeof height == 'function'){
-        height = height();
-      }
-
-      instance.rootElement.style.height = height + 'px';
-    }
-
-    if (typeof settings.width != 'undefined'){
-      var width = settings.width;
-
-      if (typeof width == 'function'){
-        width = width();
-      }
-
-      instance.rootElement.style.width = width + 'px';
     }
 
     /* jshint ignore:start */
