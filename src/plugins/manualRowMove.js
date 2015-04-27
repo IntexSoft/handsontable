@@ -46,7 +46,7 @@
         var box = currentTH.getBoundingClientRect();
         startOffset = currentTH.offsetTop;
         handle.style.top = startOffset + 'px';
-        handle.style.left = currentTH.offsetLeft + 'px';
+        handle.style.left = currentTH.offsetLeft + instance.view.wt.wtTable.holder.scrollLeft + 'px';
         instance.view.wt.wtTable.spreader.appendChild(handle);
       }
     }
