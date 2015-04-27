@@ -67,7 +67,13 @@ WalkontableOverlays.prototype.registerListeners = function () {
     });
   });
 
-  eventManager.addEventListener(this.topOverlay.clone.wtTable.holder, 'scroll', function (e) {
+  eventManager.addEventListener(this.mainTableScrollableElement, 'mousewheel', function (e) {
+    that.requestAnimFrame.call(window, function () {
+      that.translateMouseWheelToScroll(e);
+    });
+  });
+
+    eventManager.addEventListener(this.topOverlay.clone.wtTable.holder, 'scroll', function (e) {
     that.requestAnimFrame.call(window, function () {
       that.syncScrollPositions(e);
     });
@@ -117,6 +123,7 @@ WalkontableOverlays.prototype.registerListeners = function () {
 WalkontableOverlays.prototype.translateMouseWheelToScroll = function (e) {
   var topOverlay = this.topOverlay.clone.wtTable.holder,
     leftOverlay = this.leftOverlay.clone.wtTable.holder,
+    mainHolder = this.instance.wtTable.holder,
     parentHolder,
     tempElem = e.target,
     eventMockup = {};
@@ -135,9 +142,11 @@ WalkontableOverlays.prototype.translateMouseWheelToScroll = function (e) {
     this.syncScrollPositions(eventMockup, (-0.2) * e.wheelDeltaY);
   } else if (parentHolder == leftOverlay) {
     this.syncScrollPositions(eventMockup, (-0.2) * e.wheelDeltaX);
+  } else if (parentHolder == mainHolder) {
+    this.syncScrollPositions(eventMockup, (-0.2) * e.wheelDeltaY);
   }
 
-  return false;
+    return false;
 };
 
 WalkontableOverlays.prototype.syncScrollPositions = function (e, fakeScrollValue) {
@@ -176,7 +185,7 @@ WalkontableOverlays.prototype.syncScrollPositions = function (e, fakeScrollValue
 
     tempScrollValue = Handsontable.Dom.getScrollTop(target);
 
-    if (this.overlayScrollPositions.master.top !== tempScrollValue) {
+    if (this.overlayScrollPositions.master.top !== tempScrollValue || leftOverlay.scrollTop !== tempScrollValue) {
       leftOverlay.scrollTop = tempScrollValue;
       this.overlayScrollPositions.master.top = tempScrollValue;
       scrollValueChanged = true;
@@ -194,7 +203,9 @@ WalkontableOverlays.prototype.syncScrollPositions = function (e, fakeScrollValue
 
     // "fake" scroll value calculated from the mousewheel event
     if (fakeScrollValue) {
+      leftOverlay.scrollTop += fakeScrollValue;
       master.scrollTop += fakeScrollValue;
+      scrollValueChanged = true;
     }
 
   } else if (target === leftOverlay) {
@@ -202,6 +213,7 @@ WalkontableOverlays.prototype.syncScrollPositions = function (e, fakeScrollValue
 
     // if scrolling the left overlay - populate the vertical scroll to the master table
     if (this.overlayScrollPositions.left.top !== tempScrollValue) {
+      leftOverlay.scrollTop = tempScrollValue;
       master.scrollTop = tempScrollValue;
       this.overlayScrollPositions.left.top = tempScrollValue;
       scrollValueChanged = true;
@@ -210,6 +222,7 @@ WalkontableOverlays.prototype.syncScrollPositions = function (e, fakeScrollValue
     // "fake" scroll value calculated from the mousewheel event
     if (fakeScrollValue) {
       master.scrollLeft += fakeScrollValue;
+      scrollValueChanged = true;
     }
   }
 
