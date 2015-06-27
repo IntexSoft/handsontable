@@ -1,7 +1,35 @@
-(function (Handsontable) {
-  var DateEditor = Handsontable.editors.TextEditor.prototype.extend();
 
-  DateEditor.prototype.init = function () {
+import * as helper from './../helpers.js';
+import * as dom from './../dom.js';
+import {getEditor, registerEditor} from './../editors.js';
+import {TextEditor} from './textEditor.js';
+import {eventManager as eventManagerObject} from './../eventManager.js';
+import moment from 'moment';
+import Pikaday from 'pikaday';
+
+
+/**
+ * @private
+ * @editor DateEditor
+ * @class DateEditor
+ * @dependencies TextEditor moment pikaday
+ */
+class DateEditor extends TextEditor {
+  /**
+   * @param {Core} hotInstance Handsontable instance
+   */
+  constructor(hotInstance) {
+    this.$datePicker = null;
+    this.datePicker = null;
+    this.datePickerStyle = null;
+    this.defaultDateFormat = 'DD/MM/YYYY';
+    this.isCellEdited = false;
+    this.parentDestroyed = false;
+
+    super.constructor(hotInstance);
+  }
+
+  init() {
     if (typeof moment !== 'function') {
       throw new Error("You need to include moment.js to your project.");
     }
@@ -9,23 +37,19 @@
     if (typeof Pikaday !== 'function') {
       throw new Error("You need to include Pikaday to your project.");
     }
-
-    Handsontable.editors.TextEditor.prototype.init.apply(this, arguments);
-
-    this.isCellEdited = false;
-    var that = this;
-
-    this.instance.addHook('afterDestroy', function () {
-      that.parentDestroyed = true;
-      that.destroyElements();
+    super.init();
+    this.instance.addHook('afterDestroy', () => {
+      this.parentDestroyed = true;
+      this.destroyElements();
     });
-  };
+  }
 
-  DateEditor.prototype.createElements = function () {
-    var that = this;
-    Handsontable.editors.TextEditor.prototype.createElements.apply(this, arguments);
+  /**
+   * Create data picker instance
+   */
+  createElements() {
+    super.createElements();
 
-    this.defaultDateFormat = 'DD/MM/YYYY';
     this.datePicker = document.createElement('DIV');
     this.datePickerStyle = this.datePicker.style;
     this.datePickerStyle.position = 'absolute';
@@ -33,95 +57,121 @@
     this.datePickerStyle.left = 0;
     this.datePickerStyle.zIndex = 9999;
 
-    Handsontable.Dom.addClass(this.datePicker, 'htDatepickerHolder');
+    dom.addClass(this.datePicker, 'htDatepickerHolder');
     document.body.appendChild(this.datePicker);
 
-    var htInput = this.TEXTAREA;
-
-    var defaultOptions = {
-      format: that.defaultDateFormat,
+    let htInput = this.TEXTAREA;
+    let defaultOptions = {
+      format: this.defaultDateFormat,
       field: htInput,
       trigger: htInput,
-      container: that.datePicker,
+      container: this.datePicker,
       reposition: false,
       bound: false,
-      onSelect: function (dateStr) {
+      onSelect: (dateStr) => {
         if (!isNaN(dateStr.getTime())) {
-          dateStr = moment(dateStr).format(that.cellProperties.dateFormat || that.defaultDateFormat);
+          dateStr = moment(dateStr).format(this.cellProperties.dateFormat || this.defaultDateFormat);
         }
-        that.setValue(dateStr);
-        that.hideDatepicker();
+        this.setValue(dateStr);
+        this.hideDatepicker();
       },
-      onClose: function () {
-        if(!that.parentDestroyed) {
-          that.finishEditing(false);
+      onClose: () => {
+        if (!this.parentDestroyed) {
+          this.finishEditing(false);
         }
       }
     };
 
     this.$datePicker = new Pikaday(defaultOptions);
-
-    var eventManager = Handsontable.eventManager(this);
+    const eventManager = eventManagerObject(this);
 
     /**
      * Prevent recognizing clicking on datepicker as clicking outside of table
      */
-    eventManager.addEventListener(this.datePicker, 'mousedown', function (event) {
-      Handsontable.helper.stopPropagation(event);
+    eventManager.addEventListener(this.datePicker, 'mousedown', (event) => {
+      helper.stopPropagation(event);
     });
-
     this.hideDatepicker();
-  };
+  }
 
-  DateEditor.prototype.destroyElements = function () {
+  /**
+   * Destroy data picker instance
+   */
+  destroyElements() {
     this.$datePicker.destroy();
-  };
+  }
 
-  DateEditor.prototype.prepare = function () {
+  /**
+   * Prepare editor to appear
+   *
+   * @param {Number} row Row index
+   * @param {Number} col Column index
+   * @param {String} prop Property name (passed when datasource is an array of objects)
+   * @param {HTMLTableCellElement} td Table cell element
+   * @param {*} originalValue Original value
+   * @param {Object} cellProperties Object with cell properties ({@see Core#getCellMeta})
+   */
+  prepare(row, col, prop, td, originalValue, cellProperties) {
     this._opened = false;
-    Handsontable.editors.TextEditor.prototype.prepare.apply(this, arguments);
-  };
+    super.prepare(row, col, prop, td, originalValue, cellProperties);
+  }
 
-  DateEditor.prototype.open = function (event) {
-    Handsontable.editors.TextEditor.prototype.open.call(this);
+  /**
+   * Open editor
+   *
+   * @param {Event} [event=null]
+   */
+  open(event = null) {
+    super.open();
     this.showDatepicker(event);
-  };
+  }
 
-  DateEditor.prototype.close = function () {
-    var that = this;
+  /**
+   * Close editor
+   */
+  close() {
     this._opened = false;
-    this.instance._registerTimeout(setTimeout(function () {
-      that.instance.selection.refreshBorders();
+    this.instance._registerTimeout(setTimeout(() => {
+      this.instance.selection.refreshBorders();
     }, 0));
 
-    Handsontable.editors.TextEditor.prototype.close.apply(this, arguments);
-  };
+    super.close();
+  }
 
-  DateEditor.prototype.finishEditing = function (isCancelled, ctrlDown) {
+  /**
+   * @param {Boolean} [isCancelled=false]
+   * @param {Boolean} [ctrlDown=false]
+   */
+  finishEditing(isCancelled = false, ctrlDown = false) {
     if (isCancelled) { // pressed ESC, restore original value
-      //var value = this.instance.getDataAtCell(this.row, this.col);
-      var value = this.originalValue;
+      // var value = this.instance.getDataAtCell(this.row, this.col);
+      let value = this.originalValue;
+
       if (value !== void 0) {
         this.setValue(value);
       }
     }
-
     this.hideDatepicker();
-    Handsontable.editors.TextEditor.prototype.finishEditing.apply(this, arguments);
-  };
+    super.finishEditing(isCancelled, ctrlDown);
+  }
 
-  DateEditor.prototype.showDatepicker = function (event) {
-    var offset = this.TD.getBoundingClientRect(),
-      dateFormat = this.cellProperties.dateFormat || this.defaultDateFormat,
-      datePickerConfig = this.$datePicker.config(),
-      dateStr,
-      isMouseDown = this.instance.view.isMouseDown(),
-      isMeta = event ? Handsontable.helper.isMetaKey(event.keyCode) : false;
+  /**
+   * Show data picker
+   *
+   * @param {Event} event
+   */
+  showDatepicker(event) {
+    let offset = this.TD.getBoundingClientRect();
+    let dateFormat = this.cellProperties.dateFormat || this.defaultDateFormat;
+    let datePickerConfig = this.$datePicker.config();
+    let dateStr;
+    let isMouseDown = this.instance.view.isMouseDown();
+    let isMeta = event ? helper.isMetaKey(event.keyCode) : false;
 
-    this.datePickerStyle.top = (window.pageYOffset + offset.top + Handsontable.Dom.outerHeight(this.TD)) + 'px';
+    this.datePickerStyle.top = (window.pageYOffset + offset.top + dom.outerHeight(this.TD)) + 'px';
     this.datePickerStyle.left = (window.pageXOffset + offset.left) + 'px';
 
-    this.$datePicker._onInputFocus = function () {};
+    this.$datePicker._onInputFocus = function() {};
     datePickerConfig.format = dateFormat;
 
     if (this.originalValue) {
@@ -130,11 +180,8 @@
       if (moment(dateStr, dateFormat, true).isValid()) {
         this.$datePicker.setMoment(moment(dateStr, dateFormat), true);
       }
-
-      if (!isMeta) {
-        if (!isMouseDown) {
-          this.setValue('');
-        }
+      if (!isMeta && !isMouseDown) {
+        this.setValue('');
       }
 
     } else {
@@ -147,24 +194,29 @@
           this.$datePicker.setMoment(moment(dateStr, dateFormat), true);
         }
 
-        if (!isMeta) {
-          if (!isMouseDown) {
-            this.setValue('');
-          }
+        if (!isMeta && !isMouseDown) {
+          this.setValue('');
         }
-        //this.setValue(dateStr);
+      } else {
+        // if a default date is not defined, set a soft-default-date: display the current day and month in the
+        // datepicker, but don't fill the editor input
+        this.$datePicker.gotoToday();
       }
     }
 
     this.datePickerStyle.display = 'block';
     this.$datePicker.show();
-  };
+  }
 
-  DateEditor.prototype.hideDatepicker = function () {
+  /**
+   * Hide data picker
+   */
+  hideDatepicker() {
     this.datePickerStyle.display = 'none';
     this.$datePicker.hide();
-  };
+  }
+}
 
-  Handsontable.editors.DateEditor = DateEditor;
-  Handsontable.editors.registerEditor('date', DateEditor);
-})(Handsontable);
+export {DateEditor};
+
+registerEditor('date', DateEditor);

@@ -14,7 +14,7 @@ describe('AutoColumnSize', function () {
 
   var arrayOfObjects = function () {
     return [
-      {id: "Short", name: "Somewhat long", lastName: "The very very very longest one"}
+      {id: "Short", name: "Somewhat long", lastName: "The very very very longest one", nestedData: [{id: 1000}]}
     ];
   };
 
@@ -29,6 +29,31 @@ describe('AutoColumnSize', function () {
 
     expect(width0).toBeLessThan(width1);
     expect(width1).toBeLessThan(width2);
+  });
+
+  it('should correctly detect column width with colHeaders', function () {
+    handsontable({
+      data: arrayOfObjects(),
+      autoColumnSize: true,
+      colHeaders: ['Identifier'],
+      columns: [
+        {data: 'id'}
+      ]
+    });
+
+    expect(colWidth(this.$container, 0)).toBeAroundValue(57);
+  });
+
+  it('should correctly detect column width with columns.title', function () {
+    handsontable({
+      data: arrayOfObjects(),
+      autoColumnSize: true,
+      columns: [
+        {data: 'id', title: 'Identifier'}
+      ]
+    });
+
+    expect(colWidth(this.$container, 0)).toBeAroundValue(57);
   });
 
   it('should be possible to disable plugin using updateSettings', function () {
@@ -252,5 +277,20 @@ describe('AutoColumnSize', function () {
     });
 
     expect(colWidth(this.$container, 0)).toBeGreaterThan(colWidth(this.$container, 1));
+  });
+
+  it('should\'t serialize value if it is array (nested data sources)', function () {
+    var spy = jasmine.createSpy('renderer');
+
+    handsontable({
+      data: arrayOfObjects(),
+      autoColumnSize: true,
+      columns: [
+        {data: 'nestedData'}
+      ],
+      renderer: spy
+    });
+
+    expect(spy.mostRecentCall.args[5]).toEqual([{id: 1000}]);
   });
 });
